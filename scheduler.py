@@ -1,5 +1,6 @@
 from upgrade import Upgrade
 import examples
+import copy
 
 def gen_dominance(upgrades):
     costs = [u.name for u in sorted(upgrades, key=lambda u: u.cost)]
@@ -8,15 +9,49 @@ def gen_dominance(upgrades):
     # TODO: Update this to be a lot more efficient... not O(n^2)
     table = {}
     for i, u in enumerate(costs):
-        more_expensive = set(costs[i+1:])
-        slower_roi = set(rois[rois.index(u)+1:])
+        cheaper = set(costs[:i])
+        faster_roi = set(rois[:rois.index(u)])
 
-        table[u] = more_expensive & slower_roi
+        table[u] = cheaper & faster_roi
 
     return table
 
+def efficiency(upgrades, rate=1):
+    time = 0
+    for u in upgrades:
+        time += u.cost / rate
+        rate += u.rate
+
+    return time
+
+def brute_force(table, lookup, before=[]):
+    best_order = []
+    best_time = float("inf")
+
+    if len(table.keys()) == 1:
+        order = before + [lookup[list(table)[0]]]
+        return order, efficiency(order)
+
+    for u1, d1 in table.items():
+        if d1 != set():
+            continue
+
+        sub_table = copy.deepcopy(table)
+
+        del sub_table[u1]
+        
+        for u2, d2 in sub_table.items():
+            d2.discard(u1)
+
+        order, time = brute_force(sub_table, lookup, before+[lookup[u1]])
+        if time < best_time:
+            best_time = time
+            best_order = order
+
+    return best_order, best_time
+
 if __name__ == "__main__":
-    upgrades = examples.gen_random(5)
-    
-    print(*[f"Name: {u.name} | Cost: {u.cost} | ROI: {u.roi}" for u in upgrades], sep='\n')
-    print(*gen_dominance(upgrades).items(), sep="\n")
+    upgrades = examples.gen_random(12)
+    lookup = {u.name: u for u in upgrades}
+    brute_force(gen_dominance(upgrades), lookup)
+
