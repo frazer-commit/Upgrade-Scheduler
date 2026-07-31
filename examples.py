@@ -16,7 +16,7 @@ def gen_random(amount=10, noise=0.1):
         u = Upgrade(f"Upgrade {i+1}", cost, rate)
         upgrades.append(u)
 
-    return upgrades
+    return np.array(upgrades)
 
 
 if __name__ == "__main__":
